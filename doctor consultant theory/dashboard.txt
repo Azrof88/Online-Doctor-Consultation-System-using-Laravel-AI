@@ -1,0 +1,14 @@
+routes/
+    web.php      <-- Dashboard Routes
+
+resources/
+  views/
+    dashboards/
+      admin.blade.php
+      doctor.blade.php
+      patient.blade.php
+
+app/
+  Http/
+    Controllers/
+      DashboardController.php

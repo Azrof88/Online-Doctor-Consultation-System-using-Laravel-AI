@@ -1,0 +1,115 @@
+Here’s a fully-fleshed ER-diagram for your Online Doctor Consultation System, incorporating all the features and professional improvements we discussed (roles & policies, Zoom, payments, ML symptom checker, etc.).
+
+```mermaid
+erDiagram
+    %% Tables and their fields
+    USERS {
+        int    id PK
+        string name
+        string email
+        string password
+        int    role_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+    ROLES {
+        int    id PK
+        string name
+    }
+    DOCTORS {
+        int    id PK
+        int    user_id FK
+        string specialization
+        text   bio
+        text   availability_schedule
+        timestamp created_at
+        timestamp updated_at
+    }
+    PATIENTS {
+        int    id PK
+        int    user_id FK
+        int    age
+        string gender
+        string contact_number
+        timestamp created_at
+        timestamp updated_at
+    }
+    APPOINTMENTS {
+        int      id PK
+        int      patient_id FK
+        int      doctor_id FK
+        datetime scheduled_datetime
+        enum     mode {online, offline}
+        enum     status {pending, confirmed, completed, cancelled}
+        timestamp created_at
+        timestamp updated_at
+    }
+    PAYMENTS {
+        int     id PK
+        int     appointment_id FK
+        decimal amount
+        string  method
+        enum    status {pending, paid, failed}
+        string  transaction_id
+        timestamp created_at
+        timestamp updated_at
+    }
+    ZOOM_MEETINGS {
+        int    id PK
+        int    appointment_id FK
+        string meeting_id
+        string meeting_password
+        string start_url
+        string join_url
+        timestamp created_at
+        timestamp updated_at
+    }
+    SYMPTOM_CHECKS {
+        int    id PK
+        int    patient_id FK
+        text   symptoms_text
+        timestamp created_at
+        timestamp updated_at
+    }
+    DISEASES {
+        int    id PK
+        string name
+        text   description
+    }
+    SYMPTOM_CHECK_DISEASES {
+        int symptom_check_id FK
+        int disease_id FK
+    }
+
+    %% Relationships
+    ROLES            ||--o{ USERS                 : "defines"
+    USERS            ||--o{ DOCTORS               : "is_extended_by"
+    USERS            ||--o{ PATIENTS              : "is_extended_by"
+    PATIENTS         ||--o{ APPOINTMENTS          : "books"
+    DOCTORS          ||--o{ APPOINTMENTS          : "receives"
+    APPOINTMENTS     ||--o{ PAYMENTS              : "has"
+    APPOINTMENTS     ||--o{ ZOOM_MEETINGS         : "creates"
+    PATIENTS         ||--o{ SYMPTOM_CHECKS        : "initiates"
+    SYMPTOM_CHECKS   ||--o{ SYMPTOM_CHECK_DISEASES: "maps_to"
+    DISEASES         ||--o{ SYMPTOM_CHECK_DISEASES: "maps_from"
+```
+
+---
+
+### How to Read This Diagram
+- **USERS ← ROLES**: Every user (admin/doctor/patient) has one role.  
+- **DOCTORS & PATIENTS** extend USERS:  
+  - A doctor or patient record links back to a single user account.  
+- **APPOINTMENTS**: Patients book appointments with doctors, choosing **online/offline**.  
+- **PAYMENTS**: Each (online) appointment can have one payment record.  
+- **ZOOM_MEETINGS**: For online mode, you generate a Zoom meeting (via Zoom API) tied to the appointment.  
+- **SYMPTOM_CHECKS**: Patients submit symptoms; each check links back to the patient.  
+- **DISEASES & SYMPTOM_CHECK_DISEASES**: The ML system predicts one or more diseases per symptom check, captured via this pivot table.
+
+This structure supports:
+
+- **Role-based access control** (via ROLES → USERS).  
+- **Secure authentication & validation** on USERS (Laravel Breeze/Fortify).  
+- **Online/offline appointments** with Zoom integration and payment workflows.  
+- **Machine-learning symptom checker** that records each session and its predicted diseases.  
+- **Professional separation of concerns**: each major feature lives in its own table, making it easier to enforce policies, write Form Requests, and build clean controllers/models.
