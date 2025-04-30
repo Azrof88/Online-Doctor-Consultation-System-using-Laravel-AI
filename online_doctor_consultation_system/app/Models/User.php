@@ -47,4 +47,12 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+//     public function showRegister()
+// {
+//     // check if any admin already exists
+//     $adminExists = User::where('user_type', 'admin')->exists();
+
+//     // pass that flag into the view
+//     return view('register', compact('adminExists'));
+// }
 }

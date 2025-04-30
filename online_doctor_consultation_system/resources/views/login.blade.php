@@ -34,6 +34,10 @@
                 <input class="form-check-input" type="checkbox" id="remember" name="remember">
                 <label class="form-check-label" for="remember">Remember me</label>
               </div>
+              <!-- resources/views/login.blade.php, inside the <form> but below the button -->
+<div class="text-end mt-2">
+    <a href="{{ route('password.request') }}">Forgot password?</a>
+  </div>
             <p class="text-center mb-0">
               Don’t have an account?
               <a href="{{ route('register') }}">Register here</a>

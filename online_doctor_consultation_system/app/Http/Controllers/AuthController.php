@@ -22,7 +22,8 @@ class AuthController extends Controller
     // Show the registration form
     public function showRegister()
     {
-        return view('register');
+        $adminExists = User::where('user_type','admin')->exists();
+        return view('register', compact('adminExists'));
     }
 
 
@@ -131,6 +132,60 @@ Mail::raw(
 //     return redirect()->route('login')
 //                      ->with('status','Email verified—please log in.');
 // }
+
+// 2a) Show the “Forgot password” email-collect form
+public function showForgotForm()
+{
+    return view('auth.forgot');
+}
+
+// 2b) Validate email, send a signed reset link if found
+public function sendResetLink(Request $req)
+{
+    $req->validate(['email'=>'required|email']);
+
+    $user = User::where('email', $req->email)->first();
+    if (! $user) {
+        return back()->withErrors(['email'=>'No account found with that email.']);
+    }
+
+    // 60-minute signed URL
+    $link = URL::temporarySignedRoute(
+      'password.reset',
+      now()->addMinutes(60),
+      ['id'=>$user->id]
+    );
+
+    Mail::raw("Reset your password here: $link", function($m) use ($user) {
+        $m->to($user->email)
+          ->subject('Password Reset Link');
+    });
+
+    return back()->with('status','Check your email for the reset link.');
+}
+
+// 2c) Show the “Reset password” form
+public function showResetForm(Request $req, $id)
+{
+    // you could re-validate the signature here
+    return view('auth.reset', ['id'=>$id]);
+}
+
+// 2d) Validate & update the new password
+public function resetPassword(Request $req)
+{
+    $data = $req->validate([
+        'id'       => 'required|exists:users,id',
+        'password' => 'required|confirmed|min:6',
+    ]);
+
+    $user = User::find($data['id']);
+    $user->password = Hash::make($data['password']);
+    $user->save();
+
+    return redirect()->route('login')
+                     ->with('status','Password updated—please log in.');
+}
 
 
 }

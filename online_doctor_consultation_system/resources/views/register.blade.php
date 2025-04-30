@@ -33,7 +33,10 @@
                 <label for="user_type" class="form-label">User Type</label>
                 <select class="form-select" id="user_type" name="user_type" required>
                   <option value="" selected disabled>Choose one</option>
-                  <option value="admin">Admin</option>
+                {{-- only show “Admin” if none exists yet --}}
+                    @if(! $adminExists)
+                    <option value="admin">Admin</option>
+                    @endif
                   <option value="doctor">Doctor</option>
                   <option value="patient">Patient</option>
                 </select>
