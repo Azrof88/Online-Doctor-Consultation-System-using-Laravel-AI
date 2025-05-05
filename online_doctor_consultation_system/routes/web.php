@@ -20,8 +20,8 @@ Route::middleware(['auth','can:admin'])
      ->prefix('admin')
      ->name('admin.')
      ->group(function(){
-         // Dashboard
-         Route::get('/', [AdminDashboardController::class, 'index'])
+        //  // Dashboard
+         Route::get('/admin', [AdminDashboardController::class, 'index'])
               ->name('home');
 
          // Doctors CRUD
@@ -65,6 +65,8 @@ Route::controller(AuthController::class)->group(function () {
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
      ->name('dashboard');
+    //  Route::get('/admin', [DashboardController::class,'index'])
+    //  ->name('admin.home');
 
    //  Route::get('email/verify/{id}', [AuthController::class,'verifyEmail'])
      //->name('verification.verify')

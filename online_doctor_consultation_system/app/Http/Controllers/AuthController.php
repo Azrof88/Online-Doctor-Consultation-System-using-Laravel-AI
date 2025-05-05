@@ -12,8 +12,13 @@ use Illuminate\Support\Facades\Hash;
 
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Mail;
+use App\Models\Doctor;
+use App\Models\Patient;
 use PDF;    // Barryvdh\DomPDF\Facade\Pdf
+use Illuminate\Support\Facades\Auth;         // ← add
 
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cookie;
 
 
 
@@ -120,13 +125,13 @@ class AuthController extends Controller
         return view('login');
     }
 
-    // Handle login POST
     public function login(Request $req)
     {
         // 1) validate
         $creds = $req->validate([
-          'email'    => 'required|email',
-          'password' => 'required',
+            'email'      => 'required|email',
+            'password'   => 'required',
+            'remember'   => 'nullable|boolean',
         ]);
 
         // 2) lookup & verify
@@ -135,20 +140,27 @@ class AuthController extends Controller
             return back()->withErrors(['email' => 'Invalid credentials']);
         }
 
-        // 3) set session
-        session(['user_id' => $user->id, 'role' => $user->role]);
-        // 4) If “remember me” checked → generate & save token + set cookie
-    if($req->filled('remember')) {
-        $token = Str::random(60);
-        $user->remember_token = $token;
-        $user->save();
+        // 3) Log in via Laravel Auth
+        Auth::login($user);
 
-        // 30 days, in minutes
-        Cookie::queue('remember_token',$token, 60*24*30);
-        Cookie::queue('remember_user',$user->id, 60*24*30);
-      }
+        // 4) Regenerate the session ID to prevent fixation
+        $req->session()->regenerate();
 
-        return redirect()->route('dashboard');
+        // 5) “Remember me” cookie logic
+        if (! empty($creds['remember'])) {
+            $token = Str::random(60);
+            $user->remember_token = $token;
+            $user->save();
+
+            // 30 days in minutes
+            $minutes = 60 * 24 * 30;
+            Cookie::queue('remember_token', $token, $minutes);
+            Cookie::queue('remember_user',  $user->id, $minutes);
+        }
+
+        // 6) Redirect into your dashboard
+        return redirect()->route('dashboard')
+                         ->with('status', 'You are now logged in.');
     }
 
     // Log out

@@ -63,6 +63,23 @@
                   </td>
                 </tr>
                 @endforeach
+                {{--fill with dummy data--}}
+                {{-- @for($i = 1; $i <= 10; $i++)
+                <tr>
+                  <td>{{ $i }}</td>
+                  <td>Doctor {{ $i }}</td>
+                  <td>doctor{{ $i }}@example.com</td>
+                  <td>+123456789{{ $i }}</td>
+                  <td>Specialization {{ $i }}</td>
+                  <td>
+                    <a href="#" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="POST" action="#" class="d-inline">
+                      @csrf @method('DELETE')
+                      <button class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+                @endfor --}}
               </tbody>
             </table>
           </div>
@@ -99,6 +116,26 @@
                   </td>
                 </tr>
                 @endforeach
+
+                {{--fill with dummy data--}}
+
+                {{-- @for($i = 1; $i <= 10; $i++)
+                <tr>
+                  <td>{{ $i }}</td>
+                  <td>Patient {{ $i }}</td>
+                  <td>patient{{ $i }}@example.com</td>
+                  <td>+123456789{{ $i }}</td>
+                  <td>{{ 20 + $i }}</td>
+                  <td>{{ $i % 2 == 0 ? 'Female' : 'Male' }}</td>
+                  <td>
+                    <a href="#" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="POST" action="#" class="d-inline">
+                      @csrf @method('DELETE')
+                      <button class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+                @endfor --}}
               </tbody>
             </table>
           </div>

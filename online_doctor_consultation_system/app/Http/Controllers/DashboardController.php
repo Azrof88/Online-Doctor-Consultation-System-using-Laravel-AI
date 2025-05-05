@@ -1,9 +1,12 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
 use App\Models\User;
-// app/Http/Controllers/DashboardController.php
+use App\Models\Doctor;
+use App\Models\Patient;
+
 class DashboardController extends Controller
 {
     public function index(Request $req)
@@ -15,8 +18,8 @@ class DashboardController extends Controller
                         ->first();
             if ($user) {
                 session([
-                    'user_id'   => $user->id,
-                    'role' => $user->role,
+                    'user_id' => $user->id,
+                    'role'    => $user->role,
                 ]);
             }
         }
@@ -35,12 +38,19 @@ class DashboardController extends Controller
 
         // 3) Return the view based on role
         switch ($user->role) {
-            case 1:
-                return view('dashboards.admin', compact('user'));
-            case 2:
+            case 1: // Admin
+                // load doctors & patients for the admin dashboard
+                $doctors  = Doctor::with('user')->get();
+                $patients = Patient::with('user')->get();
+
+                return view('dashboards.admin', compact('user','doctors','patients'));
+
+            case 2: // Doctor
                 return view('dashboards.doctor', compact('user'));
-            case 3:
+
+            case 3: // Patient
                 return view('dashboards.patient', compact('user'));
+
             default:
                 abort(403);
         }
