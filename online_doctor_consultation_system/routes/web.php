@@ -21,22 +21,15 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
      //->middleware('signed');
 
 
-// Show “enter your email” form
-Route::get('password/forgot', [AuthController::class, 'showForgotForm'])
+// Step 1: show the “enter your email” form
+Route::get('password/forgot', [AuthController::class,'showForgotForm'])
      ->name('password.request');
 
-// Handle the email submission
-Route::post('password/forgot', [AuthController::class, 'sendResetLink'])
-     ->name('password.email');
+// Step 2: handle that email, lookup the user, and redirect
+Route::post('password/forgot', [AuthController::class,'redirectToPrefillRegister'])
+     ->name('password.prefill');
 
-// Show “reset your password” form (signed URL)
-Route::get('password/reset/{id}', [AuthController::class, 'showResetForm'])
-     ->name('password.reset')
-     ->middleware('signed');
-
-// Handle the actual password update
-Route::post('password/reset', [AuthController::class, 'resetPassword'])
-     ->name('password.update');
-
-
+// Step 3: show the register form pre-filled for that user
+Route::get('register/reset/{id}', [AuthController::class,'showPrefillRegister'])
+     ->name('register.prefill');
 

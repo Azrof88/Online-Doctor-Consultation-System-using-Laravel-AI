@@ -12,7 +12,7 @@
 </head>
 <body>
   <h1>Welcome, {{ $user->name }}!</h1>
-  <p>Thank you for registering as a <strong>{{ ucfirst($user->user_type) }}</strong> at Online Doctor System.</p>
+  <p>Thank you for registering as a <strong>{{ ucfirst($user->role) }}</strong> at Online Doctor System.</p>
 
   <div class="info">
     <h2>Your Account Details</h2>
@@ -20,7 +20,7 @@
       <li><strong>Name:</strong> {{ $user->name }}</li>
       <li><strong>Email:</strong> {{ $user->email }}</li>
       <li><strong>Mobile:</strong> {{ $user->mobile }}</li>
-      <li><strong>User Type:</strong> {{ ucfirst($user->user_type) }}</li>
+      <li><strong>User Type:</strong> {{ ucfirst($user->role) }}</li>
     </ul>
   </div>
 

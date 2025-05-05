@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 
 use App\Models\User;
-
+use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
 
 use Illuminate\Support\Facades\URL;
@@ -22,8 +22,10 @@ class AuthController extends Controller
     // Show the registration form
     public function showRegister()
     {
-        $adminExists = User::where('user_type','admin')->exists();
-        return view('register', compact('adminExists'));
+        $roles       = Role::all();
+        $adminExists = User::where('role', 1)->exists();             // true if someone already picked Admin
+        return view('register', compact('roles','adminExists'));
+
     }
 
 
@@ -31,49 +33,83 @@ class AuthController extends Controller
 
     public function register(Request $req)
     {
-        // 1) validate
-        $data = $req->validate([
-            'name'                  => 'required|string|max:255',
-            'email'                 => 'required|email|unique:users,email',
-            'mobile'                => 'required|string|max:50',
-            'user_type'             => 'required|in:admin,doctor,patient',
-            'password'              => 'required|confirmed|min:6',
-        ]);
+        // 1) Build validation rules
+        $rules = [
+            'name'       => 'required|string|max:255',
+            'email'      => 'required|email',
+            'mobile'     => 'required|string|max:50',
+            'role'     => 'required|in:1,2,3',
+            'password'   => 'required|confirmed|min:6',
+        ];
 
-        // 2) create user
-        $user = User::create([
-          'name'       => $data['name'],
-          'email'      => $data['email'],
-          'mobile'     => $data['mobile'],
-          'user_type'  => $data['user_type'],
-          'password'   => Hash::make($data['password']),
-        ]);
+        // If resetting (prefilled form had hidden id), require & skip unique email
+        if ($req->filled('id')) {
+            $rules['id'] = 'required|exists:users,id';
+        } else {
+            // brand-new signup must have unique email
+            $rules['email'] .= '|unique:users,email';
+        }
 
-        // 1) render the PDF
-$pdf = PDF::loadView('pdf.welcome', ['user' => $user]);
+        // 2) Validate incoming data
+        $data = $req->validate($rules);
 
-// 2) send the mail with PDF attached
-Mail::raw(
-    "Hello {$user->name},\n\nThank you for registering at Online Doctor System. Your registration details are attached as a PDF.",
-    function($msg) use ($user, $pdf) {
-        $msg->to($user->email)
-            ->subject('Welcome to Online Doctor System')
-            ->attachData(
-                $pdf->output(),
-                'Registration-Details.pdf',
-                ['mime' => 'application/pdf']
+        // 3) Either reset password or create new user
+        if ($req->filled('id')) {
+            // Password reset branch
+            $user = User::find($data['id']);
+            $user->password = Hash::make($data['password']);
+            $user->save();
+
+            // (Optional) send a “Your password has been changed” email
+            Mail::raw(
+                "Hello {$user->name},\n\nYour password has been successfully updated.",
+                function($msg) use ($user) {
+                    $msg->to($user->email)
+                        ->subject('Password Updated – Online Doctor System');
+                }
             );
-    }
-);
 
-        // 4) log them in by session
+        } else {
+            // New registration branch
+            $user = User::create([
+                'name'       => $data['name'],
+                'email'      => $data['email'],
+                'mobile'     => $data['mobile'],
+                'role'  => $data['role'],
+                'password'   => Hash::make($data['password']),
+            ]);
+
+            // Generate PDF of registration details
+            $pdf = Pdf::loadView('pdf.welcome', ['user' => $user]);
+
+            // Send welcome email with PDF attached
+            Mail::raw(
+                "Hello {$user->name},\n\nThank you for registering at Online Doctor System. Your registration details are attached as a PDF.",
+                function($msg) use ($user, $pdf) {
+                    $msg->to($user->email)
+                        ->subject('Welcome to Online Doctor System')
+                        ->attachData(
+                            $pdf->output(),
+                            'Registration-Details.pdf',
+                            ['mime' => 'application/pdf']
+                        );
+                }
+            );
+        }
+
+        // 4) Log user in via session
         session([
-          'user_id'   => $user->id,
-          'user_type' => $user->user_type,
+            'user_id'   => $user->id,
+            'role' => $user->role,
         ]);
+
+        // 5) Redirect to dashboard
+        $message = $req->filled('id')
+            ? 'Password updated! You’re now logged in.'
+            : 'Registration successful! A welcome email has been sent.';
 
         return redirect()->route('dashboard')
-                         ->with('status', 'Registration successful! A welcome email has been sent.');
+                         ->with('status', $message);
     }
 
 
@@ -100,7 +136,7 @@ Mail::raw(
         }
 
         // 3) set session
-        session(['user_id' => $user->id, 'user_type' => $user->user_type]);
+        session(['user_id' => $user->id, 'role' => $user->role]);
         // 4) If “remember me” checked → generate & save token + set cookie
     if($req->filled('remember')) {
         $token = Str::random(60);
@@ -133,58 +169,30 @@ Mail::raw(
 //                      ->with('status','Email verified—please log in.');
 // }
 
-// 2a) Show the “Forgot password” email-collect form
 public function showForgotForm()
 {
-    return view('auth.forgot');
+    return view('auth.forgot-email');
 }
 
-// 2b) Validate email, send a signed reset link if found
-public function sendResetLink(Request $req)
+// 2) Validate & redirect to the “prefill register” URL
+public function redirectToPrefillRegister(Request $req)
 {
     $req->validate(['email'=>'required|email']);
+    $user = User::where('email',$req->email)->first();
 
-    $user = User::where('email', $req->email)->first();
     if (! $user) {
         return back()->withErrors(['email'=>'No account found with that email.']);
     }
 
-    // 60-minute signed URL
-    $link = URL::temporarySignedRoute(
-      'password.reset',
-      now()->addMinutes(60),
-      ['id'=>$user->id]
-    );
-
-    Mail::raw("Reset your password here: $link", function($m) use ($user) {
-        $m->to($user->email)
-          ->subject('Password Reset Link');
-    });
-
-    return back()->with('status','Check your email for the reset link.');
+    return redirect()->route('register.prefill',['id'=>$user->id]);
 }
 
-// 2c) Show the “Reset password” form
-public function showResetForm(Request $req, $id)
+// 3) Load the same register view, but pass in the $user so it can prefill all fields
+public function showPrefillRegister($id)
 {
-    // you could re-validate the signature here
-    return view('auth.reset', ['id'=>$id]);
-}
-
-// 2d) Validate & update the new password
-public function resetPassword(Request $req)
-{
-    $data = $req->validate([
-        'id'       => 'required|exists:users,id',
-        'password' => 'required|confirmed|min:6',
-    ]);
-
-    $user = User::find($data['id']);
-    $user->password = Hash::make($data['password']);
-    $user->save();
-
-    return redirect()->route('login')
-                     ->with('status','Password updated—please log in.');
+    $user = User::findOrFail($id);
+    $adminExists = User::where('role','1')->exists();
+    return view('register', compact('user','adminExists'));
 }
 
 

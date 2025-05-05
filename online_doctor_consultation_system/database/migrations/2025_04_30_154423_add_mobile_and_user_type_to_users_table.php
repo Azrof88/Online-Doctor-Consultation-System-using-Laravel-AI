@@ -16,9 +16,9 @@ return new class extends Migration
                   ->after('email')
                   ->nullable(false);
 
-            $table->enum('user_type', ['admin','doctor','patient'])
+            $table->enum('role', [1,2,3])
                   ->after('mobile')
-                  ->default('patient');
+                  ->default(3);
         });
     }
 
@@ -28,7 +28,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['mobile','user_type']);
+            $table->dropColumn(['mobile','role']);
         });
     }
 };

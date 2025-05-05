@@ -16,6 +16,35 @@ erDiagram
         int    id PK
         string name
     }
+erDiagram of ADMIN:
+    ROLES ||--o{ USERS              : defines
+    USERS ||--o{ DOCTORS            : extends
+    USERS ||--o{ PATIENTS           : extends
+    PATIENTS ||--o{ APPOINTMENTS      : "books"
+    DOCTORS ||--o{ APPOINTMENTS      : "receives"
+    APPOINTMENTS ||--o{ PAYMENTS       : "has"
+    APPOINTMENTS ||--o{ ZOOM_MEETINGS  : "creates"
+    PATIENTS ||--o{ SYMPTOM_CHECKS    : "initiates"
+    SYMPTOM_CHECKS ||--o{ SYMPTOM_CHECK_DISEASES : "maps_to"
+    DISEASES ||--o{ SYMPTOM_CHECK_DISEASES     : "maps_from"
+
+Relationships Explained
+
+ROLES → USERS: Each user (admin/doctor/patient) is assigned a role.
+
+USERS → DOCTORS / PATIENTS: Doctor and Patient tables extend the base user record via user_id.
+
+PATIENTS → APPOINTMENTS: A patient can book many appointments.
+
+DOCTORS → APPOINTMENTS: A doctor can receive many appointments.
+
+APPOINTMENTS → PAYMENTS: Each appointment may have a payment record.
+
+APPOINTMENTS → ZOOM_MEETINGS: Online appointments link to a Zoom meeting record.
+
+PATIENTS → SYMPTOM_CHECKS → SYMPTOM_CHECK_DISEASES → DISEASES: Symptom checks map to predicted diseases.
+    
+    %% Note: ADMIN is a role in ROLES->USERS. Users with user_type='admin' have full access to DOCTORS and PATIENTS data.
     DOCTORS {
         int    id PK
         int    user_id FK

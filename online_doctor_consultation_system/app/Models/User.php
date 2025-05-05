@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Models;
+use App\Models\Role;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,7 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'mobile',
-        'user_type'
+        'role'
     ];
 
     /**
@@ -50,9 +51,14 @@ class User extends Authenticatable
 //     public function showRegister()
 // {
 //     // check if any admin already exists
-//     $adminExists = User::where('user_type', 'admin')->exists();
+//     $adminExists = User::where('role', 'admin')->exists();
 
 //     // pass that flag into the view
 //     return view('register', compact('adminExists'));
 // }
+
+public function roleModel()
+{
+    return $this->belongsTo(Role::class, 'role');
+}
 }

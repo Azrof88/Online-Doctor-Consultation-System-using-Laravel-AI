@@ -16,7 +16,7 @@ class DashboardController extends Controller
             if ($user) {
                 session([
                     'user_id'   => $user->id,
-                    'user_type' => $user->user_type,
+                    'role' => $user->role,
                 ]);
             }
         }
@@ -33,13 +33,13 @@ class DashboardController extends Controller
             return redirect()->route('login');
         }
 
-        // 3) Return the view based on user_type
-        switch ($user->user_type) {
-            case 'admin':
+        // 3) Return the view based on role
+        switch ($user->role) {
+            case 1:
                 return view('dashboards.admin', compact('user'));
-            case 'doctor':
+            case 2:
                 return view('dashboards.doctor', compact('user'));
-            case 'patient':
+            case 3:
                 return view('dashboards.patient', compact('user'));
             default:
                 abort(403);
