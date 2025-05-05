@@ -4,14 +4,23 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+Route::controller(AuthController::class)->group(function () {
+    // Registration
+    Route::get('register', 'showRegister')->   name('register');
+    Route::post('register', 'register')->      name('register.submit');
 
-Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
+    // Login / Logout
+    Route::get('login',    'showLogin')->      name('login');
+    Route::post('login',   'login')->          name('login.submit');
+    Route::post('logout',  'logout')->         name('logout');
+    // Forgot-to-Reset (reuse register form)
+    Route::get('password/forgot',   'showForgotForm')->             name('password.request');
+    Route::post('password/forgot',  'redirectToPrefillRegister')->  name('password.prefill');
+    Route::get('register/reset/{id}','showPrefillRegister')->       name('register.prefill');
 
-Route::get('/',    [AuthController::class, 'showLogin'])->name('login');
-Route::post('/login',   [AuthController::class, 'login'])->  name('login.submit');
+});
 
-Route::post('/logout',  [AuthController::class, 'logout'])->      name('logout');
+
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
      ->name('dashboard');
@@ -21,15 +30,4 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
      //->middleware('signed');
 
 
-// Step 1: show the “enter your email” form
-Route::get('password/forgot', [AuthController::class,'showForgotForm'])
-     ->name('password.request');
-
-// Step 2: handle that email, lookup the user, and redirect
-Route::post('password/forgot', [AuthController::class,'redirectToPrefillRegister'])
-     ->name('password.prefill');
-
-// Step 3: show the register form pre-filled for that user
-Route::get('register/reset/{id}', [AuthController::class,'showPrefillRegister'])
-     ->name('register.prefill');
 

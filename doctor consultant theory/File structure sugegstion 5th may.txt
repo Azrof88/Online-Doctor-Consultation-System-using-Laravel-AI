@@ -1,0 +1,59 @@
+File structure sugegstion 5th may
+app/
+  Http/
+    Controllers/
+      AuthController.php          // login/register/logout
+      Admin/
+        DoctorController.php      // index/create/store/edit/update/destroy
+        PatientController.php
+        AppointmentController.php // view all, filter, etc.
+        PaymentController.php
+      Doctor/
+        DashboardController.php   // doctor-specific UI
+        AvailabilityController.php
+      Patient/
+        DashboardController.php
+        AppointmentController.php // book, pay, join
+        SymptomCheckController.php
+  Models/
+    Role.php
+    User.php
+    Doctor.php
+    Patient.php
+    Appointment.php
+    Payment.php
+    ZoomMeeting.php
+    SymptomCheck.php
+    Disease.php
+  Requests/
+    Admin/
+      StoreDoctorRequest.php
+      UpdateDoctorRequest.php
+      // ... similarly for Patient, Appointment, etc.
+    Doctor/
+      UpdateAvailabilityRequest.php
+    Patient/
+      StoreAppointmentRequest.php
+      StoreSymptomCheckRequest.php
+routes/
+  web.php         // all your web routes, grouped by prefix & middleware
+  api.php         // future API routes
+resources/
+  views/
+    layouts/app.blade.php
+    auth/login.blade.php
+    auth/register.blade.php
+    dashboards/
+      admin.blade.php
+      doctor.blade.php
+      patient.blade.php
+    admin/
+      doctors/
+        index.blade.php
+        create.blade.php
+        edit.blade.php
+      patients/
+        index.blade.php
+        create.blade.php
+        edit.blade.php
+      // … and so on
