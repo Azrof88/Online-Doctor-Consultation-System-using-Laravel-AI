@@ -125,49 +125,48 @@ class AuthController extends Controller
         return view('login');
     }
 
-    public function login(Request $req)
+
+        public function login(Request $req)
     {
         // 1) validate
         $creds = $req->validate([
-            'email'      => 'required|email',
-            'password'   => 'required',
-            'remember'   => 'nullable|boolean',
+            'email'    => 'required|email',
+            'password' => 'required',
+            'remember' => 'nullable|boolean',
         ]);
 
-        // 2) lookup & verify
-        $user = User::where('email', $creds['email'])->first();
-        if (! $user || ! Hash::check($creds['password'], $user->password)) {
-            return back()->withErrors(['email' => 'Invalid credentials']);
+        // 2) attempt login (with optional “remember me”)
+        if (Auth::attempt([
+                'email'    => $creds['email'],
+                'password' => $creds['password'],
+            ], $req->filled('remember'))
+        ) {
+            // 3) regenerate session to prevent fixation
+            $req->session()->regenerate();
+
+            // 4) redirect to intended (or dashboard)
+            return redirect()->intended(route('dashboard'));
         }
 
-        // 3) Log in via Laravel Auth
-        Auth::login($user);
-
-        // 4) Regenerate the session ID to prevent fixation
-        $req->session()->regenerate();
-
-        // 5) “Remember me” cookie logic
-        if (! empty($creds['remember'])) {
-            $token = Str::random(60);
-            $user->remember_token = $token;
-            $user->save();
-
-            // 30 days in minutes
-            $minutes = 60 * 24 * 30;
-            Cookie::queue('remember_token', $token, $minutes);
-            Cookie::queue('remember_user',  $user->id, $minutes);
-        }
-
-        // 6) Redirect into your dashboard
-        return redirect()->route('dashboard')
-                         ->with('status', 'You are now logged in.');
+        // 5) invalid credentials
+        return back()->withErrors([
+            'email' => 'Invalid credentials',
+        ]);
     }
 
+
     // Log out
-    public function logout()
+    public function logout(Request $req)
     {
-        session()->flush();
-        return redirect()->route('login');
+        // 1) invalidate session
+        // 2) regenerate CSRF token
+        // 3) redirect to login page
+
+        Auth::logout();
+    $req->session()->invalidate();
+    $req->session()->regenerateToken();
+
+    return redirect()->route('login');
     }
 
 

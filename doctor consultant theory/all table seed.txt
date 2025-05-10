@@ -1,0 +1,233 @@
+<?php
+
+// database/seeders/RolesTableSeeder.php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use DB;
+
+class RolesTableSeeder extends Seeder
+{
+    public function run()
+    {
+        DB::table('roles')->insert([
+            ['id' => 1, 'name' => 'admin'],
+            ['id' => 2, 'name' => 'doctor'],
+            ['id' => 3, 'name' => 'patient'],
+        ]);
+    }
+}
+
+// database/seeders/UsersTableSeeder.php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
+
+class UsersTableSeeder extends Seeder
+{
+    public function run()
+    {
+        // 1 Admin
+        User::create([
+            'name'     => 'Alice Admin',
+            'email'    => 'alice@admin.com',
+            'password' => Hash::make('password'),
+            'role_id'  => 1,
+        ]);
+
+        // 2 Doctors
+        User::create([ 'name'=>'Dr. John Doe','email'=>'john@doctor.com','password'=>Hash::make('password'),'role_id'=>2 ]);
+        User::create([ 'name'=>'Dr. Jane Roe','email'=>'jane@doctor.com','password'=>Hash::make('password'),'role_id'=>2 ]);
+
+        // 3 Patients
+        User::create([ 'name'=>'Patient One','email'=>'p1@patient.com','password'=>Hash::make('password'),'role_id'=>3 ]);
+        User::create([ 'name'=>'Patient Two','email'=>'p2@patient.com','password'=>Hash::make('password'),'role_id'=>3 ]);
+    }
+}
+
+// database/seeders/DoctorsTableSeeder.php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\Doctor;
+use App\Models\User;
+
+class DoctorsTableSeeder extends Seeder
+{
+    public function run()
+    {
+        $docUsers = User::where('role_id',2)->get();
+        collect([
+            ['specialization'=>'Cardiology','bio'=>'Heart specialist.','schedule'=>'Mon-Fri 9-5'],
+            ['specialization'=>'Orthopedics','bio'=>'Bone specialist.','schedule'=>'Tue-Thu 10-4'],
+        ])->each(function($data,$i) use($docUsers) {
+            Doctor::create(array_merge([
+                'user_id'=>$docUsers[$i]->id
+            ], $data));
+        });
+    }
+}
+
+// database/seeders/PatientsTableSeeder.php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\Patient;
+use App\Models\User;
+
+class PatientsTableSeeder extends Seeder
+{
+    public function run()
+    {
+        $patUsers = User::where('role_id',3)->get();
+        collect([
+            ['age'=>30,'gender'=>'male','contact_number'=>'1234567890'],
+            ['age'=>28,'gender'=>'female','contact_number'=>'0987654321'],
+        ])->each(function($data,$i) use($patUsers) {
+            Patient::create(array_merge([
+                'user_id'=>$patUsers[$i]->id
+            ], $data));
+        });
+    }
+}
+
+// database/seeders/AppointmentsTableSeeder.php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\Appointment;
+use App\Models\Doctor;
+use App\Models\Patient;
+use Carbon\Carbon;
+
+class AppointmentsTableSeeder extends Seeder
+{
+    public function run()
+    {
+        $patients = Patient::all();
+        $doctors  = Doctor::all();
+
+        // One online, one offline
+        Appointment::create([
+            'patient_id'=> $patients[0]->id,
+            'doctor_id' => $doctors[0]->id,
+            'scheduled_datetime'=>Carbon::now()->addDays(1),
+            'mode'=>'online',
+            'status'=>'confirmed',
+        ]);
+
+        Appointment::create([
+            'patient_id'=> $patients[1]->id,
+            'doctor_id' => $doctors[1]->id,
+            'scheduled_datetime'=>Carbon::now()->addDays(2),
+            'mode'=>'offline',
+            'status'=>'pending',
+        ]);
+    }
+}
+
+// database/seeders/PaymentsTableSeeder.php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\Payment;
+use App\Models\Appointment;
+
+class PaymentsTableSeeder extends Seeder
+{
+    public function run()
+    {
+        $appt = Appointment::where('mode','online')->first();
+        if($appt) {
+            Payment::create([
+                'appointment_id'=>$appt->id,
+                'amount'=>100.00,
+                'method'=>'card',
+                'status'=>'paid',
+                'transaction_id'=> 'TXN'.time(),
+            ]);
+        }
+    }
+}
+
+// database/seeders/ZoomMeetingsTableSeeder.php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\ZoomMeeting;
+use App\Models\Appointment;
+
+class ZoomMeetingsTableSeeder extends Seeder
+{
+    public function run()
+    {
+        $appt = Appointment::where('mode','online')->first();
+        if($appt) {
+            ZoomMeeting::create([
+                'appointment_id'=>$appt->id,
+                'meeting_id'=>'123-456-789',
+                'meeting_password'=>'pass123',
+                'start_url'=>'https://zoom.us/start/123',
+                'join_url'=>'https://zoom.us/join/123',
+            ]);
+        }
+    }
+}
+
+// database/seeders/DiseasesTableSeeder.php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\Disease;
+
+class DiseasesTableSeeder extends Seeder
+{
+    public function run()
+    {
+        collect(['Flu','Cold','Migraine'])->each(function($d) {
+            Disease::create(['name'=>$d,'description'=>"Description of $d"]);
+        });
+    }
+}
+
+// database/seeders/SymptomChecksTableSeeder.php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\SymptomCheck;
+use App\Models\Patient;
+
+class SymptomChecksTableSeeder extends Seeder
+{
+    public function run()
+    {
+        $patients = Patient::all();
+        SymptomCheck::create([
+            'patient_id'=>$patients[0]->id,
+            'symptoms_text'=>'Fever, cough, headache',
+        ]);
+    }
+}
+
+// database/seeders/SymptomCheckDiseasesTableSeeder.php
+namespace Database\Seeders;
+use Illuminate\Database\Seeder;
+use App\Models\SymptomCheck;
+use App\Models\Disease;
+
+class SymptomCheckDiseasesTableSeeder extends Seeder
+{
+    public function run()
+    {
+        $check   = SymptomCheck::first();
+        $disease = Disease::where('name','Flu')->first();
+        if($check && $disease) {
+            $check->diseases()->attach($disease->id);
+        }
+    }
+}
+
+// database/seeders/DatabaseSeeder.php
+default [Database\Seeders\RolesTableSeeder::class,
+    Database\Seeders\UsersTableSeeder::class,
+    Database\Seeders\DoctorsTableSeeder::class,
+    Database\Seeders\PatientsTableSeeder::class,
+    Database\Seeders\AppointmentsTableSeeder::class,
+    Database\Seeders\PaymentsTableSeeder::class,
+    Database\Seeders\ZoomMeetingsTableSeeder::class,
+    Database\Seeders\DiseasesTableSeeder::class,
+    Database\Seeders\SymptomChecksTableSeeder::class,
+    Database\Seeders\SymptomCheckDiseasesTableSeeder::class,

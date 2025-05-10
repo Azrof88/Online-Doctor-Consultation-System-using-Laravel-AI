@@ -18,6 +18,8 @@ return new class extends Migration
               ->onDelete('cascade')
               ->onUpdate('cascade');
         $table->string('specialization')->nullable();
+        $table->decimal('fee', 8, 2)
+                  ->default(0);
         $table->text('bio')->nullable();
         $table->text('availability_schedule')->nullable();
         $table->timestamps();

@@ -63,6 +63,7 @@ public function roleModel()
 {
     return $this->belongsTo(Role::class, 'role');
 }
+public function patient() { return $this->hasOne(Patient::class, 'user_id'); }
 
 
 }

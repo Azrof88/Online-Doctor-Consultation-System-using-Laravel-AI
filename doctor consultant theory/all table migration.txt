@@ -1,0 +1,227 @@
+<?php
+// Run these commands in your terminal:
+//
+// 1) Roles & link to users
+//    php artisan make:migration create_roles_table --create=roles
+//    php artisan make:migration add_role_id_to_users_table --table=users
+
+// 2) Extensions of USERS
+//    php artisan make:migration create_doctors_table --create=doctors
+//    php artisan make:migration create_patients_table --create=patients
+
+// 3) Core feature tables
+//    php artisan make:migration create_appointments_table --create=appointments
+   php artisan make:migration create_payments_table --create=payments
+    php artisan make:migration create_zoom_meetings_table --create=zoom_meetings
+
+// 4) Symptom checker tables
+    php artisan make:migration create_symptom_checks_table --create=symptom_checks
+    php artisan make:migration create_diseases_table --create=diseases
+    php artisan make:migration create_symptom_check_diseases_table --create=symptom_check_diseases
+
+
+##########################
+# database/migrations/xxxx_xx_xx_xxxxxx_create_roles_table.php
+##########################
+public function up()
+{
+    Schema::create('roles', function (Blueprint $table) {
+        $table->id();
+        $table->string('name')->unique();
+        $table->timestamps();
+    });
+}
+
+public function down()
+{
+    Schema::dropIfExists('roles');
+}
+
+
+##########################
+# database/migrations/xxxx_xx_xx_xxxxxx_add_role_id_to_users_table.php
+##########################
+public function up()
+{
+    Schema::table('users', function (Blueprint $table) {
+        $table->foreignId('role_id')
+              ->after('password')
+              ->constrained('roles')
+              ->cascadeOnUpdate()
+              ->restrictOnDelete();
+    });
+}
+
+public function down()
+{
+    Schema::table('users', function (Blueprint $table) {
+        $table->dropForeign(['role_id']);
+        $table->dropColumn('role_id');
+    });
+}
+
+
+##########################
+# database/migrations/xxxx_xx_xx_xxxxxx_create_doctors_table.php
+##########################
+public function up()
+{
+    Schema::create('doctors', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+        $table->string('specialization')->nullable();
+        $table->text('bio')->nullable();
+        $table->text('availability_schedule')->nullable();
+        $table->timestamps();
+        $table->unique('user_id');
+    });
+}
+
+public function down()
+{
+    Schema::dropIfExists('doctors');
+}
+
+
+##########################
+# database/migrations/xxxx_xx_xx_xxxxxx_create_patients_table.php
+##########################
+public function up()
+{
+    Schema::create('patients', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+        $table->integer('age')->nullable();
+        $table->string('gender')->nullable();
+        $table->string('contact_number')->nullable();
+        $table->timestamps();
+        $table->unique('user_id');
+    });
+}
+
+public function down()
+{
+    Schema::dropIfExists('patients');
+}
+
+
+##########################
+# database/migrations/xxxx_xx_xx_xxxxxx_create_appointments_table.php
+##########################
+public function up()
+{
+    Schema::create('appointments', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('patient_id')->constrained('patients')->cascadeOnDelete();
+        $table->foreignId('doctor_id')->constrained('doctors')->cascadeOnDelete();
+        $table->dateTime('scheduled_datetime');
+        $table->enum('mode', ['online','offline'])->default('offline');
+        $table->enum('status', ['pending','confirmed','completed','cancelled'])->default('pending');
+        $table->timestamps();
+    });
+}
+
+public function down()
+{
+    Schema::dropIfExists('appointments');
+}
+
+
+##########################
+# database/migrations/xxxx_xx_xx_xxxxxx_create_payments_table.php
+##########################
+public function up()
+{
+    Schema::create('payments', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('appointment_id')->constrained('appointments')->cascadeOnDelete();
+        $table->decimal('amount', 10, 2);
+        $table->string('method');
+        $table->enum('status', ['pending','paid','failed'])->default('pending');
+        $table->string('transaction_id')->nullable();
+        $table->timestamps();
+    });
+}
+
+public function down()
+{
+    Schema::dropIfExists('payments');
+}
+
+
+##########################
+# database/migrations/xxxx_xx_xx_xxxxxx_create_zoom_meetings_table.php
+##########################
+public function up()
+{
+    Schema::create('zoom_meetings', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('appointment_id')->constrained('appointments')->cascadeOnDelete();
+        $table->string('meeting_id');
+        $table->string('meeting_password')->nullable();
+        $table->string('start_url');
+        $table->string('join_url');
+        $table->timestamps();
+    });
+}
+
+public function down()
+{
+    Schema::dropIfExists('zoom_meetings');
+}
+
+
+##########################
+# database/migrations/xxxx_xx_xx_xxxxxx_create_symptom_checks_table.php
+##########################
+public function up()
+{
+    Schema::create('symptom_checks', function (Blueprint $table) {
+        $table->id();
+        $table->foreignId('patient_id')->constrained('patients')->cascadeOnDelete();
+        $table->text('symptoms_text');
+        $table->timestamps();
+    });
+}
+
+public function down()
+{
+    Schema::dropIfExists('symptom_checks');
+}
+
+
+##########################
+# database/migrations/xxxx_xx_xx_xxxxxx_create_diseases_table.php
+##########################
+public function up()
+{
+    Schema::create('diseases', function (Blueprint $table) {
+        $table->id();
+        $table->string('name');
+        $table->text('description')->nullable();
+        $table->timestamps();
+    });
+}
+
+public function down()
+{
+    Schema::dropIfExists('diseases');
+}
+
+
+##########################
+# database/migrations/xxxx_xx_xx_xxxxxx_create_symptom_check_diseases_table.php
+##########################
+public function up()
+{
+    Schema::create('symptom_check_diseases', function (Blueprint $table) {
+        $table->foreignId('symptom_check_id')->constrained('symptom_checks')->cascadeOnDelete();
+        $table->foreignId('disease_id')->constrained('diseases')->cascadeOnDelete();
+        $table->primary(['symptom_check_id','disease_id']);
+    });
+}
+
+public function down()
+{
+    Schema::dropIfExists('symptom_check_diseases');
+}
