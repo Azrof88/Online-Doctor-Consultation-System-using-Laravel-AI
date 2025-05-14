@@ -15,12 +15,24 @@
       {{-- Sidebar --}}
       <nav class="col-md-3 col-lg-2 d-md-block bg-white sidebar py-4">
         <div class="nav flex-column">
-          <a class="nav-link active" href="#">🏠 Home</a>
-          <a class="nav-link" href="#">👤 Profile</a>
-          <a class="nav-link" href="#">📅 Appointments</a>
-          <a class="nav-link" href="#">🕒 Availability</a>
-          <a class="nav-link" href="#">💰 Payments</a>
-          <a class="nav-link" href="#">🔗 Zoom Meetings</a>
+          <a class="nav-link @if(request()->routeIs('doctor.home')) active @endif"
+             href="{{ route('doctor.home') }}">🏠 Home</a>
+
+          <a class="nav-link @if(request()->routeIs('doctor.profile*')) active @endif"
+             href="{{ route('doctor.profile') }}">👤 Profile</a>
+
+          <a class="nav-link @if(request()->routeIs('doctor.appointments*')) active @endif"
+             href="{{ route('doctor.appointments.index') }}">📅 Appointments</a>
+
+          <a class="nav-link @if(request()->routeIs('doctor.availability*')) active @endif"
+             href="{{ route('doctor.availability.edit') }}">🕒 Availability</a>
+
+          <a class="nav-link @if(request()->routeIs('doctor.payments*')) active @endif"
+             href="{{ route('doctor.payments.index') }}">💰 Payments</a>
+
+          <a class="nav-link @if(request()->routeIs('doctor.zoom-meetings*')) active @endif"
+             href="{{ route('doctor.zoom-meetings.index') }}">🔗 Zoom Meetings</a>
+
           <form method="POST" action="{{ route('logout') }}" class="mt-3">
             @csrf
             <button class="nav-link btn btn-link text-danger p-0">Logout</button>
@@ -35,8 +47,8 @@
         {{-- Upcoming Appointments --}}
         <div class="card mb-4">
           <div class="card-header">📅 Upcoming Appointments</div>
-          <div class="card-body">
-            <table class="table table-hover">
+          <div class="card-body p-0">
+            <table class="table mb-0">
               <thead>
                 <tr>
                   <th>ID</th>
@@ -44,46 +56,57 @@
                   <th>Date & Time</th>
                   <th>Mode</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th class="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {{-- @foreach($appointments as $appt)
-                <tr>
-                  <td>{{ $appt->id }}</td>
-                  <td>{{ $appt->patient->user->name }}</td>
-                  <td>{{ $appt->scheduled_datetime }}</td>
-                  <td>{{ ucfirst($appt->mode) }}</td>
-                  <td>{{ ucfirst($appt->status) }}</td>
-                  <td>
-                    @if($appt->status==='pending')
-                      <a href="#" class="btn btn-sm btn-success">Confirm</a>
-                      <a href="#" class="btn btn-sm btn-danger">Cancel</a>
-                    @elseif($appt->mode==='online' && $appt->status==='confirmed')
-                      <a href="{{ $appt->zoomMeeting->start_url }}" class="btn btn-sm btn-primary">Start Zoom</a>
+                @forelse($appointments as $appt)
+                  <tr>
+                    <td>{{ $appt->id }}</td>
+                    <td>{{ $appt->patient->user->name }}</td>
+                    <td>{{ \Illuminate\Support\Carbon::parse($appt->scheduled_datetime)->format('Y-m-d h:i A') }}</td>
+                    <td>{{ ucfirst($appt->mode) }}</td>
+                    <td>{{ ucfirst($appt->status) }}</td>
+                    <td class="text-end">
+                      @if($appt->status === 'pending')
+                        <form action="{{ route('doctor.appointments.update', $appt) }}"
+                              method="POST" class="d-inline">
+                          @csrf @method('PATCH')
+                          <button name="status" value="confirmed" class="btn btn-sm btn-success">
+                            Confirm
+                          </button>
+                        </form>
+                        <form action="{{ route('doctor.appointments.update', $appt) }}"
+                              method="POST" class="d-inline">
+                          @csrf @method('PATCH')
+                          <button name="status" value="cancelled" class="btn btn-sm btn-danger">
+                            Cancel
+                          </button>
+                        </form>
 
-                    @endif
-                  </td>
-                </tr>
-                @endforeach --}}
+                      @elseif($appt->mode==='online' && $appt->status==='confirmed')
+                        @if($appt->zoomMeeting?->start_url)
+                          <a href="{{ $appt->zoomMeeting->start_url }}"
+                             class="btn btn-sm btn-primary"
+                             target="_blank" rel="noopener">
+                            Start Zoom
+                          </a>
+                        @else
+                          <span class="text-muted">No Zoom Link</span>
+                        @endif
 
-                <tr>
-                  <td>id</td>
-                  <td>name</td>
-                  <td>scheduled_datetime</td>
-                  <td>mode</td>
-                  <td>status</td>
-                  <td>
-
-                      <a href="#" class="btn btn-sm btn-success">Confirm</a>
-                      <a href="#" class="btn btn-sm btn-danger">Cancel</a>
-
-
-
-
-                  </td>
-                </tr>
-
+                      @else
+                        <span class="text-muted">—</span>
+                      @endif
+                    </td>
+                  </tr>
+                @empty
+                  <tr>
+                    <td colspan="6" class="text-center py-3">
+                      No upcoming appointments.
+                    </td>
+                  </tr>
+                @endforelse
               </tbody>
             </table>
           </div>
@@ -93,9 +116,12 @@
         <div class="card">
           <div class="card-header">🕒 My Availability</div>
           <div class="card-body">
-            {{-- <p>{{ $user->doctor->availability_schedule }}</p> --}}
-            <p>Availability schedule</p>
-            <a href="#" class="btn btn-sm btn-outline-secondary">Edit Schedule</a>
+            <p>{{ $doctor->availability_schedule ?? 'Not set yet.' }}</p>
+<a href="{{ route('doctor.availability.edit') }}"
+   class="btn btn-sm btn-outline-secondary">
+  Edit Schedule
+</a>
+
           </div>
         </div>
       </main>

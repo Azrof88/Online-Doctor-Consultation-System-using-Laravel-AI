@@ -24,6 +24,53 @@ use Karim007\SslcommerzLaravel\SslCommerzController;
 Use App\Http\Controllers\Patient\PatientPaymentController;
 use App\Http\Middleware\VerifyCsrfToken;
 
+use App\Http\Controllers\Doctor\DashboardController as DoctorDashboardController;
+use App\Http\Controllers\Doctor\AppointmentController as DoctorAppointmentController;
+use App\Http\Controllers\Doctor\ProfileController as DoctorProfileController;
+use App\Http\Controllers\Doctor\AvailabilityController as DoctorAvailabilityController;
+use App\Http\Controllers\Doctor\ZoomMeetingController as DoctorZoomMeetingController;
+
+// Doctor‐only routes
+Route::middleware(['auth', 'can:doctor'])
+     ->prefix('doctor')
+     ->name('doctor.')
+     ->group(function(){
+
+    // 1) Dashboard (GET /doctor)
+    Route::get('/', [DoctorDashboardController::class, 'index'])
+         ->name('home');
+
+    // 2) Appointments: list & details
+    Route::resource('appointments', DoctorAppointmentController::class)
+         ->only(['index','show','update']);
+
+    // Show the edit form (no {id} parameter)
+Route::get('availability/edit', [DoctorAvailabilityController::class, 'edit'])
+     ->name('availability.edit');
+
+// Handle the update (PATCH)
+Route::patch('availability', [DoctorAvailabilityController::class, 'update'])
+     ->name('availability.update');
+
+
+    // 4) Zoom Meetings management
+    Route::resource('zoom-meetings', DoctorZoomMeetingController::class)
+         ->only(['index','show','edit','update']);
+
+    Route::resource('payments', Doctor\DoctorPaymentController::class)
+              ->only(['index','show','update']);
+              // maybe update() to mark paid/confirmed
+
+    // 5) Profile view & update
+    Route::get('profile', [DoctorProfileController::class, 'show'])
+         ->name('profile');
+    Route::post('profile', [DoctorProfileController::class, 'update'])
+         ->name('profile.update');
+
+    // 6) (Optional) Logout can remain the same
+});
+
+
 // Accept GET (user cancel) or POST (gateway callback)
 Route::match(['get','post'], 'sslcommerz/success',  [PatientPaymentController::class,'success'])
     ->name('sslcommerz.success')

@@ -20,6 +20,6 @@ class ZoomMeeting extends Model
      */
     public function appointment()
     {
-        return $this->belongsTo(App\Models\Appointment::class);
+        return $this->belongsTo(\App\Models\Appointment::class);
     }
 }

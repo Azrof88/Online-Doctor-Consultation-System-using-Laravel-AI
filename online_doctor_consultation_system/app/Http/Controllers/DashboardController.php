@@ -28,7 +28,18 @@ class DashboardController extends Controller
                 return view('dashboards.admin', compact('user','doctors','patients'));
 
             case 2: // Doctor
-                return view('dashboards.doctor', compact('user'));
+        // 1) Grab the doctor profile
+        $doctor = $user->doctor;
+
+        // 2) Load all this doctor’s upcoming appts (eager‐load patient name + Zoom)
+        $appointments = $doctor->appointments()
+            ->with(['patient.user','zoomMeeting'])
+            ->whereIn('status', ['pending','confirmed'])
+            ->orderByDesc('scheduled_datetime')
+            ->get();
+
+        // 3) Pass them all into the view
+        return view('dashboards.doctor', compact('user','doctor','appointments'));
 
             case 3: // Patient
                 // load this user’s Patient record
