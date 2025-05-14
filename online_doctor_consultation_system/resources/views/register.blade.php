@@ -98,6 +98,28 @@
     @enderror
   @endif
 </div>
+{{-- Zoom Link (shown only if “Doctor” is selected) --}}
+@php
+  $doctorRoleId = $roles->firstWhere('name', 'doctor')->id ?? null;
+@endphp
+
+<div class="mb-3" id="zoom-link-group" style="display:none;">
+  <label for="zoom_link" class="form-label">Zoom Profile Link</label>
+  <input
+    type="url"
+    class="form-control @error('zoom_link') is-invalid @enderror"
+    id="zoom_link"
+    name="zoom_link"
+    value="{{ old('zoom_link') }}"
+    placeholder="https://us04web.zoom.us/my/yourname"
+  >
+  @error('zoom_link')
+    <div class="invalid-feedback">{{ $message }}</div>
+  @enderror
+</div>
+
+
+
 
 
               <div class="mb-3">
@@ -140,5 +162,24 @@
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const roleEl       = document.getElementById('role');
+    const zoomGroup    = document.getElementById('zoom-link-group');
+    const doctorRoleId = {{ $doctorRoleId ?: 'null' }};
+
+    // If there’s no “doctor” role ID, bail out
+    if (!doctorRoleId) return;
+
+    function toggleZoomField() {
+      zoomGroup.style.display = (parseInt(roleEl.value) === doctorRoleId)
+        ? 'block'
+        : 'none';
+    }
+
+    roleEl.addEventListener('change', toggleZoomField);
+    toggleZoomField(); // run on first load
+  });
+</script>
 </body>
 </html>

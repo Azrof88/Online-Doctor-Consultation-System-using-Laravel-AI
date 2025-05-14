@@ -38,6 +38,7 @@ class AuthController extends Controller
 
     public function register(Request $req)
     {
+        $doctorRoleId = Role::where('name','doctor')->value('id');
         // 1) Build validation rules
         $rules = [
             'name'       => 'required|string|max:255',
@@ -45,6 +46,11 @@ class AuthController extends Controller
             'mobile'     => 'required|string|max:50',
             'role'     => 'required|in:1,2,3',
             'password'   => 'required|confirmed|min:6',
+            'zoom_link'             => [
+      'nullable',
+      'url',
+      'required_if:role,'.$doctorRoleId
+  ],
         ];
 
         // If resetting (prefilled form had hidden id), require & skip unique email
@@ -83,6 +89,22 @@ class AuthController extends Controller
                 'role'  => $data['role'],
                 'password'   => Hash::make($data['password']),
             ]);
+            if ($data['role'] == $doctorRoleId) {
+    $user->doctor()->create([
+        // user_id is filled automatically by the relation
+        'name'      => $user->name,           // required column
+        'zoom_link' => $data['zoom_link'],    // from your form
+        // specialization, bio, availability_schedule
+        // are all nullable in the schema and can be omitted
+        // fee has a default of 0, so you can omit it too
+    ]);
+}
+
+            // Log them in
+Auth::login($user);
+
+
+
 
             // Generate PDF of registration details
             $pdf = Pdf::loadView('pdf.welcome', ['user' => $user]);

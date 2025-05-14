@@ -4,21 +4,29 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Disease;
+use App\Models\Patient;
 
 class SymptomCheck extends Model
 {
-    public function diseases()
-{
-    return $this->belongsToMany(
-      \App\Models\Disease::class,
-      'symptom_check_diseases'
-    );
-}
+    protected $fillable = [
+        'patient_id',
+        'symptoms_text',
+    ];
+
     public function patient()
     {
-        return $this->belongsTo(\App\Models\Patient::class, 'patient_id');
+        return $this->belongsTo(Patient::class);
     }
 
-
-
+    public function diseases()
+    {
+        return $this->belongsToMany(
+            Disease::class,
+            'symptom_check_diseases',
+            'symptom_check_id',
+            'disease_id'
+        );
+    }
 }
+
+

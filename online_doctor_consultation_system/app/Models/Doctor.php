@@ -10,10 +10,12 @@ class Doctor extends Model
     protected $fillable = [
         'id',
         'user_id',
+        'name',
         'specialization',
         'fee',
-
+'zoom_link',
         'bio',
+        'availability_schedule',
 
     ];
 

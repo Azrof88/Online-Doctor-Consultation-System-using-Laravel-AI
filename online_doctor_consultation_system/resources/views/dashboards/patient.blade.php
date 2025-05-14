@@ -59,19 +59,31 @@
                                 ->format('Y-m-d h:i A') }}</td>
                     <td>{{ ucfirst($appt->mode) }}</td>
                     <td>{{ ucfirst($appt->status) }}</td>
-                    <td>
-                      @if($appt->status === 'pending')
-                        <a href="{{ route('patient.appointments.show', $appt) }}"
-                           class="btn btn-sm btn-primary">
-                          Pay / Confirm
-                        </a>
-                      @elseif($appt->mode === 'online' && $appt->status === 'confirmed')
-                        <a href="{{ $appt->zoomMeeting->join_url ?? '#' }}"
-                           class="btn btn-sm btn-success">
-                          Join Zoom
-                        </a>
-                      @endif
-                    </td>
+                    <td class="text-end">
+    @if($appt->status === 'pending')
+      <a href="{{ route('patient.appointments.show', $appt) }}"
+         class="btn btn-sm btn-primary">
+        Pay / Confirm
+      </a>
+
+    @elseif($appt->mode === 'online' && $appt->status === 'confirmed')
+      @if($appt->zoomMeeting?->join_url)
+        <a href="{{ $appt->zoomMeeting->join_url }}"
+           class="btn btn-sm btn-success"
+           target="_blank"
+           rel="noopener">
+          Join Zoom
+        </a>
+      @else
+        <span class="btn btn-sm btn-secondary disabled">
+          No meeting link
+        </span>
+      @endif
+
+    @else
+      <span class="text-muted">—</span>
+    @endif
+  </td>
                   </tr>
                   @endforeach
                 </tbody>

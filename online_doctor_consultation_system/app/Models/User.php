@@ -65,5 +65,9 @@ public function roleModel()
 }
 public function patient() { return $this->hasOne(Patient::class, 'user_id'); }
 
+public function doctor()
+{
+    return $this->hasOne(Doctor::class);
+}
 
 }

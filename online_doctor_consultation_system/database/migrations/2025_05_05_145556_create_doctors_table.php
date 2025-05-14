@@ -17,9 +17,12 @@ return new class extends Migration
               ->constrained()   // assumes users.id → doctors.user_id
               ->onDelete('cascade')
               ->onUpdate('cascade');
+            //table name  will be comde from users table
+        $table->string('name');
         $table->string('specialization')->nullable();
         $table->decimal('fee', 8, 2)
                   ->default(0);
+        $table->string('zoom_link')->nullable();
         $table->text('bio')->nullable();
         $table->text('availability_schedule')->nullable();
         $table->timestamps();

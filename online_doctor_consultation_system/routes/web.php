@@ -22,21 +22,25 @@ use App\Http\Controllers\Patient\SymptomCheckController as PatientSymptomCheckCo
 use App\Http\Controllers\Patient\ProfileController    as PatientProfileController;
 use Karim007\SslcommerzLaravel\SslCommerzController;
 Use App\Http\Controllers\Patient\PatientPaymentController;
+use App\Http\Middleware\VerifyCsrfToken;
 
-Route::get('sslcommerz/success',  [PatientPaymentController::class, 'success'])
-     ->name('sslcommerz.success');
+// Accept GET (user cancel) or POST (gateway callback)
+Route::match(['get','post'], 'sslcommerz/success',  [PatientPaymentController::class,'success'])
+    ->name('sslcommerz.success')
+    ->withoutMiddleware(VerifyCsrfToken::class);
 
-Route::get('sslcommerz/fail',     [PatientPaymentController::class, 'fail'])
-     ->name('sslcommerz.fail');
+Route::match(['get','post'], 'sslcommerz/fail',     [PatientPaymentController::class,'fail'])
+    ->name('sslcommerz.fail')
+    ->withoutMiddleware(VerifyCsrfToken::class);
 
-Route::get('sslcommerz/cancel',   [PatientPaymentController::class, 'fail'])
-     ->name('sslcommerz.cancel');
+Route::match(['get','post'], 'sslcommerz/cancel',   [PatientPaymentController::class,'fail'])
+    ->name('sslcommerz.cancel')
+    ->withoutMiddleware(VerifyCsrfToken::class);
 
-// IPN stays POST only:
-Route::post('sslcommerz/ipn', [
-    PatientPaymentController::class, 'ipn'
-])->name('sslcommerz.ipn');
-
+// IPN is always POST
+Route::post('sslcommerz/ipn', [PatientPaymentController::class,'ipn'])
+    ->name('sslcommerz.ipn')
+    ->withoutMiddleware(VerifyCsrfToken::class);
 
 
 Route::middleware(['auth','can:patient'])

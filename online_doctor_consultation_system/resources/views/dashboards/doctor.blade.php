@@ -21,7 +21,10 @@
           <a class="nav-link" href="#">🕒 Availability</a>
           <a class="nav-link" href="#">💰 Payments</a>
           <a class="nav-link" href="#">🔗 Zoom Meetings</a>
-          <a class="nav-link text-danger" href="{{ route('logout') }}">Logout</a>
+          <form method="POST" action="{{ route('logout') }}" class="mt-3">
+            @csrf
+            <button class="nav-link btn btn-link text-danger p-0">Logout</button>
+          </form>
         </div>
       </nav>
 
