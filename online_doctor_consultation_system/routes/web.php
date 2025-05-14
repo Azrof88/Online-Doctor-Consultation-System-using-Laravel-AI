@@ -42,7 +42,7 @@ Route::middleware(['auth', 'can:doctor'])
 
     // 2) Appointments: list & details
     Route::resource('appointments', DoctorAppointmentController::class)
-         ->only(['index','show','update']);
+         ->only(['index','show','destroy']);
 
     // Show the edit form (no {id} parameter)
 Route::get('availability/edit', [DoctorAvailabilityController::class, 'edit'])
