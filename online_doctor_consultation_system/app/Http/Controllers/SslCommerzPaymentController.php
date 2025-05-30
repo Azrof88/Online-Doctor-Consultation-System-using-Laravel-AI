@@ -2,177 +2,276 @@
 
 namespace App\Http\Controllers;
 
+use DB;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Karim007\SslcommerzLaravel\Facade\SSLCommerzPayment;
-use Karim007\SslcommerzLaravel\SslCommerz\SslCommerzNotification;
+use App\Library\SslCommerz\SslCommerzNotification;
+use App\Models\Appointment;
+use App\Models\Patient;
+use App\Models\Order;
+
 class SslCommerzPaymentController extends Controller
 {
 
+    public function showPayForm(Appointment $appointment)
+{
+    return view('patient.payments.confirm', compact('appointment'));
+}
+
     public function exampleEasyCheckout()
     {
-        return view('sslcommerz::exampleEasycheckout');
+        return view('exampleEasycheckout');
     }
 
     public function exampleHostedCheckout()
     {
-        return view('sslcommerz::exampleHosted');
+        return view('exampleHosted');
     }
 
-    public function index(Request $request)
-    {
-        $post_data = array();
-        $post_data['total_amount'] = '10'; # You cant not pay less than 10
-        $post_data['currency'] = "BDT";
-        $post_data['tran_id'] = uniqid(); // tran_id must be unique
+    public function index(Request $request, Appointment $appointment)
+{
+    // 1) Get authenticated patient
+    $patient = auth()->user()->patient;
+    $user = $patient->user; // get the related user
 
-        $customer = array();
-        $customer['name'] = 'Ab Karim';
-        $customer['email'] = 'customer@mail.com';
-        $customer['address_1'] = 'Dhaka';
-        $customer['address_2'] = "";
-        $customer['city'] = "";
-        $customer['state'] = "";
-        $customer['postcode'] = "";
-        $customer['country'] = "Bangladesh";
-        $customer['phone'] = '8801XXXXXXXXX';
-        $customer['fax'] = "";
-        // SSLCommerzPayment::setCustomerInfo($customer);
-
-        $s_info = array();
-        $s_info['shipping_method'] = 'Yes'; // string (50)	Mandatory - Shipping method of the order. Example: YES or NO or Courier
-        $s_info['num_of_item'] = 1; // integer (1)	Mandatory - No of product will be shipped. Example: 1 or 2 or etc
-        $s_info['ship_name'] = 'Abc'; // string (50)	Mandatory, if shipping_method is YES - Shipping Address of your order. Not mandatory but useful if provided
-        $s_info['ship_add1'] = 'Dhaka';; // string (50)	Mandatory, if shipping_method is YES - Additional Shipping Address of your order. Not mandatory but useful if provided
-        $s_info['ship_add2'] = ''; // string (50)	Additional Shipping Address of your order. Not mandatory but useful if provided
-        $s_info['ship_city'] = 'Dhaka'; // string (50)	Mandatory, if shipping_method is YES - Shipping city of your order. Not mandatory but useful if provided
-        $s_info['ship_state'] = ''; // string (50)	Shipping state of your order. Not mandatory but useful if provided
-        $s_info['ship_postcode'] = '1215'; // string (50)	Mandatory, if shipping_method is YES - Shipping postcode of your order. Not mandatory but useful if provided
-        $s_info['ship_country'] = 'Bangladesh'; // string (50)	Mandatory, if shipping_method is YES - Shipping country of your order. Not mandatory but useful if provided
-
-        $sslc = new SslCommerzNotification();
-        $sslc->setCustomerInfo($customer)->setShipmentInfo($s_info);
-
-
-
-        #Before  going to initiate the payment order status need to insert or update as Pending.
-        DB::table('orders')
-            ->where('transaction_id', $post_data['tran_id'])
-            ->updateOrInsert([
-                'amount' => $post_data['total_amount'],
-                'status' => 'Pending',
-                'transaction_id' => $post_data['tran_id'],
-                'currency' => $post_data['currency']
-            ]);
-
-        # initiate(Transaction Data , false: Redirect to SSLCOMMERZ gateway/ true: Show all the Payement gateway here )
-        $payment_options = $sslc->makePayment($post_data, 'hosted');
-        return $payment_options;
-
+    // 2) Check appointment belongs to patient (optional, for security)
+    if ($appointment->patient_id !== $patient->id) {
+        abort(403, 'Unauthorized payment attempt.');
     }
 
-    public function payViaAjax(Request $request)
-    {
-        $post_data = array();
-        $post_data['total_amount'] = '10'; # You cant not pay less than 10
-        $post_data['currency'] = "BDT";
-        $post_data['tran_id'] = uniqid(); // tran_id must be unique
+    // 3) Prepare payment data
+    $post_data = [];
 
-        $customer = array();
-        $customer['name'] = 'Ab Karim';
-        $customer['email'] = 'customer@mail.com';
-        $customer['address_1'] = 'Dhaka';
-        $customer['address_2'] = "";
-        $customer['city'] = "";
-        $customer['state'] = "";
-        $customer['postcode'] = "";
-        $customer['country'] = "Bangladesh";
-        $customer['phone'] = '8801XXXXXXXXX';
-        $customer['fax'] = "";
-        // SSLCommerzPayment::setCustomerInfo($customer);
+    $post_data['total_amount'] = $appointment->fee;  // real fee
+    $post_data['currency'] = "BDT";
+    $post_data['tran_id'] = uniqid(); // unique transaction ID
 
-        $s_info = array();
-        $s_info['shipping_method'] = 'Yes'; // string (50)	Mandatory - Shipping method of the order. Example: YES or NO or Courier
-        $s_info['num_of_item'] = 1; // integer (1)	Mandatory - No of product will be shipped. Example: 1 or 2 or etc
-        $s_info['ship_name'] = 'Abc'; // string (50)	Mandatory, if shipping_method is YES - Shipping Address of your order. Not mandatory but useful if provided
-        $s_info['ship_add1'] = 'Dhaka';; // string (50)	Mandatory, if shipping_method is YES - Additional Shipping Address of your order. Not mandatory but useful if provided
-        $s_info['ship_add2'] = ''; // string (50)	Additional Shipping Address of your order. Not mandatory but useful if provided
-        $s_info['ship_city'] = 'Dhaka'; // string (50)	Mandatory, if shipping_method is YES - Shipping city of your order. Not mandatory but useful if provided
-        $s_info['ship_state'] = ''; // string (50)	Shipping state of your order. Not mandatory but useful if provided
-        $s_info['ship_postcode'] = '1215'; // string (50)	Mandatory, if shipping_method is YES - Shipping postcode of your order. Not mandatory but useful if provided
-        $s_info['ship_country'] = 'Bangladesh'; // string (50)	Mandatory, if shipping_method is YES - Shipping country of your order. Not mandatory but useful if provided
+    // Customer info from patient
+    $post_data['cus_name'] = $user->name;
+    $post_data['cus_email'] = $user->email;
+    $post_data['cus_add1'] = $patient->address ?? '';
+    $post_data['cus_phone'] = $user->mobile;
 
-        $sslc = new SslCommerzNotification();
-        $sslc->setCustomerInfo($customer)->setShipmentInfo($s_info);
+    // SHIPMENT INFO (optional or static)
+    $post_data['shipping_method'] = "NO"; // For virtual/online products like doctor consultation
+
+    $post_data['ship_name'] = "Online Doctor Service";
+    $post_data['ship_add1'] = "Sylhet";
+    $post_data['ship_city'] = "Sylhet";
+    $post_data['ship_postcode'] = "3100";
+    $post_data['ship_country'] = "Bangladesh";
+
+    $post_data['product_name'] = "Doctor Appointment";
+    $post_data['product_category'] = "Service";
+    $post_data['product_profile'] = "general";
+
+    // Optional params
+    $post_data['value_a'] = $appointment->id;
+    $post_data['value_b'] = $patient->id;
+
+    // 4) Save or update order in DB
+    Order::updateOrCreate(
+    ['transaction_id' => $post_data['tran_id']],
+    [
+        'name' => $post_data['cus_name'],
+        'email' => $post_data['cus_email'],
+        'phone' => $post_data['cus_phone'],
+        'amount' => $post_data['total_amount'],
+        'status' => 'Pending',
+        'address' => $post_data['cus_add1'],
+        'currency' => $post_data['currency'],
+        'appointment_id' => $appointment->id,
+    ]
+);
+    // 5) Initiate SSLCommerz payment (hosted checkout)
+    $sslc = new SslCommerzNotification();
+    $payment_options = $sslc->makePayment($post_data, 'hosted');
+
+    if (!is_array($payment_options)) {
+        // payment initiation failed
+        return redirect()->back()->withErrors('Payment initiation failed.');
+    }
+}
 
 
-        #Before  going to initiate the payment order status need to update as Pending.
-        DB::table('orders')
-            ->where('transaction_id', $post_data['tran_id'])
-            ->updateOrInsert([
-                'amount' => $post_data['total_amount'],
-                'status' => 'Pending',
-                'transaction_id' => $post_data['tran_id'],
-                'currency' => $post_data['currency']
-            ]);
+    public function payViaAjax(Request $request, Appointment $appointment)
+{
+    $patient = auth()->user()->patient;
+    $user = $patient->user; // get the related user
 
-        # initiate(Transaction Data , false: Redirect to SSLCOMMERZ gateway/ true: Show all the Payement gateway here )
-        $payment_options = $sslc->makePayment($post_data, 'checkout', 'json');
-        return $payment_options;
-
+    if ($appointment->patient_id !== $patient->id) {
+        return response()->json(['status' => 'fail', 'message' => 'Unauthorized payment.'], 403);
     }
 
-    public function success(Request $request)
-    {
-        $tran_id = $request->input('tran_id');
-        $amount = $request->input('amount');
-        $currency = $request->input('currency');
+    $post_data = [];
+    $post_data['total_amount'] = $appointment->fee;
+    $post_data['currency'] = "BDT";
+    $post_data['tran_id'] = uniqid();
 
-        #Check order status in order tabel against the transaction id or order id.
-        $order_detials = $this->findOrder($tran_id);
-        if ($order_detials->status == 'Pending') {
-            $validation = SSLCommerzPayment::orderValidate($request->all(), $tran_id, $amount, $currency);
+    // CUSTOMER INFO
+    $post_data['cus_name'] = $patient->name;
+    $post_data['cus_email'] = $user->email;
+    $post_data['cus_add1'] = $patient->address ?? 'Dhaka';
+    $post_data['cus_country'] = "Bangladesh";
+    $post_data['cus_phone'] = $user->mobile;
 
-            if ($validation) {
-                $this->orderUpdate($tran_id,'Processing');
-                return SSLCommerzPayment::returnSuccess($tran_id,"Transaction is successfully Completed",'/');
+    // SHIPMENT INFO (optional or static)
+    $post_data['shipping_method'] = "NO"; // For virtual/online products like doctor consultation
+
+    $post_data['ship_name'] = "Online Doctor Service";
+    $post_data['ship_add1'] = "Sylhet";
+    $post_data['ship_city'] = "Sylhet";
+    $post_data['ship_postcode'] = "3100";
+    $post_data['ship_country'] = "Bangladesh";
+
+    $post_data['product_name'] = "Doctor Appointment";
+    $post_data['product_category'] = "Service";
+    $post_data['product_profile'] = "general";
+
+    // Optional params
+    $post_data['value_a'] = $appointment->id;
+    $post_data['value_b'] = $patient->id;
+
+    // Callback URLs
+    $post_data['success_url'] = url('/success');
+    $post_data['fail_url'] = url('/fail');
+    $post_data['cancel_url'] = url('/cancel');
+    $post_data['ipn_url'] = url('/ipn');
+
+    // Store payment
+   Order::updateOrCreate(
+    ['transaction_id' => $post_data['tran_id']],
+    [
+        'name' => $post_data['cus_name'],
+        'email' => $post_data['cus_email'],
+        'phone' => $post_data['cus_phone'],
+        'amount' => $post_data['total_amount'],
+        'status' => 'Pending',
+        'address' => $post_data['cus_add1'],
+        'currency' => $post_data['currency'],
+        'appointment_id' => $appointment->id,
+    ]
+);
+
+    // Call SSLCommerz
+    $sslc = new SslCommerzNotification();
+
+//dd($payment_options);
+
+    $payment_options = $sslc->makePayment($post_data, 'checkout', 'json');
+
+if (is_string($payment_options)) {
+    $payment_options = json_decode($payment_options, true);
+}
+
+if (isset($payment_options['status']) && $payment_options['status'] == 'success') {
+    return redirect()->away($payment_options['data']);
+} else {
+    return redirect()->back()->with('error', $payment_options['message'] ?? 'Payment gateway initialization failed.');
+}
+
+
+}
+
+
+public function success(Request $request)
+{
+    $tran_id = $request->input('tran_id');
+    $amount = $request->input('amount');
+    $currency = $request->input('currency');
+
+    $sslc = new SslCommerzNotification();
+
+    $order = DB::table('orders')->where('transaction_id', $tran_id)->first();
+
+    if (!$order) {
+        return redirect()->route('patient.payments.index')
+            ->with('error', 'Transaction not found.');
+    }
+
+    if ($order->status === 'Pending') {
+        $validation = $sslc->orderValidate($request->all(), $tran_id, $amount, $currency);
+
+        if ($validation) {
+            // Update order status
+            DB::table('orders')
+                ->where('transaction_id', $tran_id)
+                ->update(['status' => 'Processing']);
+
+            // Update appointment
+            if (!empty($order->appointment_id)) {
+                DB::table('appointments')->where('id', $order->appointment_id)
+                    ->update(['status' => 'confirmed']);
             }
-        } else if ($order_detials->status == 'Processing' || $order_detials->status == 'Complete') {
-            return SSLCommerzPayment::returnSuccess($tran_id,"Transaction is successfully Completed",'/');
-        }
-        #That means something wrong happened. You can redirect customer to your product page.
-        return SSLCommerzPayment::returnFail($tran_id,"Invalid Transaction",'/');
 
+            return redirect()->route('patient.payments.index')
+                ->with('success', 'Transaction completed successfully.');
+        } else {
+            return redirect()->route('patient.payments.index')
+                ->with('error', 'Payment validation failed.');
+        }
     }
+
+    if (in_array($order->status, ['Processing', 'Complete'])) {
+        return redirect()->route('patient.payments.index')
+            ->with('success', 'Transaction was already completed.');
+    }
+
+    return redirect()->route('patient.payments.index')
+        ->with('error', 'Invalid transaction.');
+}
+
 
     public function fail(Request $request)
-    {
-        $tran_id = $request->input('tran_id');
-        $order_detials = $this->findOrder($tran_id);
-        if ($order_detials->status == 'Pending') {
-            $this->orderUpdate($tran_id,'Failed');
-            return SSLCommerzPayment::returnFail($tran_id,"Transaction is Failed",'/');
-        } else if ($order_detials->status == 'Processing' || $order_detials->status == 'Complete') {
-            return SSLCommerzPayment::returnSuccess($tran_id,"Transaction is already Successful",'/');
-        } else {
-            return SSLCommerzPayment::returnFail($tran_id,"Transaction is Invalid",'/');
-        }
+{
+    $tran_id = $request->input('tran_id');
 
+    $order = DB::table('orders')
+        ->where('transaction_id', $tran_id)
+        ->first();
+
+    if (!$order) {
+        return redirect()->route('patient.payments.index')
+            ->with('error', 'Transaction not found.');
     }
+
+    if ($order->status === 'Pending') {
+        DB::table('orders')->where('transaction_id', $tran_id)
+            ->update(['status' => 'Failed']);
+
+        return redirect()->route('patient.payments.index')
+            ->with('error', 'Transaction failed. Please try again.');
+    }
+
+    if (in_array($order->status, ['Processing', 'Complete'])) {
+        return redirect()->route('patient.payments.index')
+            ->with('success', 'Transaction already completed.');
+    }
+
+    return redirect()->route('patient.payments.index')
+        ->with('error', 'Invalid transaction state.');
+}
+
 
     public function cancel(Request $request)
     {
         $tran_id = $request->input('tran_id');
 
-        $order_detials = $this->findOrder($tran_id);
-        if ($order_detials->status == 'Pending') {
-            $this->orderUpdate($tran_id,'Canceled');
-            return SSLCommerzPayment::returnFail($tran_id,"Transaction is Cancel",'/');
-        } else if ($order_detials->status == 'Processing' || $order_detials->status == 'Complete') {
-            return SSLCommerzPayment::returnSuccess($tran_id,"Transaction is already Successful",'/');
+        $order_details = DB::table('orders')
+            ->where('transaction_id', $tran_id)
+            ->select('transaction_id', 'status', 'currency', 'amount')->first();
+
+        if ($order_details->status == 'Pending') {
+            $update_product = DB::table('orders')
+                ->where('transaction_id', $tran_id)
+                ->update(['status' => 'Canceled']);
+            echo "Transaction is Cancel";
+        } else if ($order_details->status == 'Processing' || $order_details->status == 'Complete') {
+            echo "Transaction is already Successful";
         } else {
-            return SSLCommerzPayment::returnFail($tran_id,"Transaction is Invalid",'/');
+            echo "Transaction is Invalid";
         }
+
+
     }
 
     public function ipn(Request $request)
@@ -184,34 +283,38 @@ class SslCommerzPaymentController extends Controller
             $tran_id = $request->input('tran_id');
 
             #Check order status in order tabel against the transaction id or order id.
-            $order_details = $this->findOrder($tran_id);
+            $order_details = DB::table('orders')
+                ->where('transaction_id', $tran_id)
+                ->select('transaction_id', 'status', 'currency', 'amount')->first();
+
             if ($order_details->status == 'Pending') {
-                //$sslc = new SslCommerzNotification();
-                $validation = SSLCommerzPayment::orderValidate($request->all(), $tran_id, $order_details->amount, $order_details->currency);
+                $sslc = new SslCommerzNotification();
+                $validation = $sslc->orderValidate($request->all(), $tran_id, $order_details->amount, $order_details->currency);
                 if ($validation == TRUE) {
-                    $this->orderUpdate($tran_id,'Processing');
-                    return SSLCommerzPayment::returnSuccess($tran_id,"Transaction is successfully Completed",'/');
+                    /*
+                    That means IPN worked. Here you need to update order status
+                    in order table as Processing or Complete.
+                    Here you can also sent sms or email for successful transaction to customer
+                    */
+                    $update_product = DB::table('orders')
+                        ->where('transaction_id', $tran_id)
+                        ->update(['status' => 'Processing']);
+
+                    echo "Transaction is successfully Completed";
                 }
             } else if ($order_details->status == 'Processing' || $order_details->status == 'Complete') {
-                return SSLCommerzPayment::returnSuccess($tran_id,"Transaction is already successfully Completed",'/');
+
+                #That means Order status already updated. No need to udate database.
+
+                echo "Transaction is already successfully Completed";
             } else {
                 #That means something wrong happened. You can redirect customer to your product page.
-                return SSLCommerzPayment::returnFail($tran_id,"Invalid Transaction",'/');
+
+                echo "Invalid Transaction";
             }
+        } else {
+            echo "Invalid Data";
         }
-        return SSLCommerzPayment::returnFail('',"Invalid Data",'/');
-    }
-
-    private function orderUpdate($tran_id,$status){
-        DB::table('orders')
-            ->where('transaction_id', $tran_id)
-            ->update(['status' => $status]);
-    }
-    private function findOrder($tran_id){
-        return DB::table('orders')
-            ->where('transaction_id', $tran_id)
-            ->select('transaction_id', 'status', 'currency', 'amount')->first();
-
     }
 
 }

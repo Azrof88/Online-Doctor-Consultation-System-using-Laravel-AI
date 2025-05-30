@@ -8,14 +8,11 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Appointment;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-//use SSLCommerz;
-use Karim007\SslCommerzLaravel\SslCommerzNotification;
+
+
 class PatientPaymentController extends Controller
 {
-    /**
-     * List this patient’s payments.
-     */
-    public function index()
+     public function index()
 {
     // 1) Grab the Patient model
     $patient = Auth::user()->patient;
@@ -36,9 +33,7 @@ class PatientPaymentController extends Controller
     // 3) Send to your view
     return view('patient.payments.index', compact('payments'));
 }
-
-
-    /**
+/**
      * Show one payment’s details.
      */
     public function show($id)
@@ -50,16 +45,17 @@ class PatientPaymentController extends Controller
 
         return view('patient.payments.show', compact('payment'));
     }
-
     /**
-     * Kick off SSLCommerz for a “pending” appointment.
+     * List this patient’s payments.
      */
+
+
+
+
+
    public function pay(Appointment $appointment)
      {
-//         dd(
-//   app()->has('sslcommerznotification'),
-//   app('sslcommerznotification')
-// );
+
 
         // grab the currently‐logged‐in patient's DB row:
      $patient = Auth::user()->patient;
@@ -93,32 +89,10 @@ class PatientPaymentController extends Controller
         ];
 
 
-    //    // 3) Kick off the checkout in “inline” (same‐tab) mode
-    //     /** @var SslCommerzNotification $gateway */
-    //     $gateway  = app('sslcommerznotification');
-    //     // Try passing only two arguments (no 'json')
-    // try {
-    //     $response = $gateway->makePayment($post_data, 'checkout');
-    // } catch (\Throwable $e) {
-    //     dd('Exception from makePayment:', $e->getMessage());
-    // }
 
-    // // Dump whatever we got back:
-    // dd($response);
-
-       // 3) Create a checkout session (JSON mode)
 $gateway = app('sslcommerznotification');
-$raw     = $gateway->makePayment($post_data, 'checkout', 'json');
+return $gateway->makePayment($post_data, 'hosted');
 
-// 4) Decode and validate
-$session = json_decode($raw, true);
-if (json_last_error() !== JSON_ERROR_NONE || empty($session['status']) || strtolower($session['status'])!=='success' || empty($session['data'])) {
-    \Log::error('SSLCommerz session init failed', ['raw'=>$raw,'session'=>$session]);
-    abort(500, 'Could not start payment session.');
-}
-
-// 5) Redirect in the same tab to the checkout URL
-return redirect()->away($session['data']);
 
     }
 

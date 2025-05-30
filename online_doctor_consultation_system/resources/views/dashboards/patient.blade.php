@@ -61,10 +61,10 @@
                     <td>{{ ucfirst($appt->status) }}</td>
                     <td class="text-end">
     @if($appt->status === 'pending')
-      <a href="{{ route('patient.appointments.show', $appt) }}"
-         class="btn btn-sm btn-primary">
-        Pay / Confirm
-      </a>
+      <a href="{{ route('patient.appointments.pay', $appt) }}" class="btn btn-sm btn-primary">
+    Pay / Confirm
+</a>
+
 
     @elseif($appt->mode === 'online' && $appt->status === 'confirmed')
       @if($appt->zoomMeeting?->join_url)

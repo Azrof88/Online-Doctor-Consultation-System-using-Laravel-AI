@@ -153,10 +153,7 @@ return [
         Illuminate\Validation\ValidationServiceProvider::class,
         Illuminate\View\ViewServiceProvider::class,
 
-        /*
-         * Package Service Providers…
-         */
-        Karim007\SslCommerzLaravel\SslcommerzLaravelServiceProvider::class,
+
 
         /*
          * Application Service Providers…
@@ -208,9 +205,6 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View'      => Illuminate\Support\Facades\View::class,
 
-        /*
-         * Package Facades…
-         */
-       // 'SSLCommerz' => Karim007\SslcommerzLaravel\Facades\SslCommerz::class,
+
     ],
 ];

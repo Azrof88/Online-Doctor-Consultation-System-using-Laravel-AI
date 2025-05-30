@@ -20,16 +20,51 @@ use App\Http\Controllers\Patient\AppointmentController as PatientAppointmentCont
 
 use App\Http\Controllers\Patient\SymptomCheckController as PatientSymptomCheckController;
 use App\Http\Controllers\Patient\ProfileController    as PatientProfileController;
-use Karim007\SslcommerzLaravel\SslCommerzController;
+
 Use App\Http\Controllers\Patient\PatientPaymentController;
-use App\Http\Middleware\VerifyCsrfToken;
+
 
 use App\Http\Controllers\Doctor\DashboardController as DoctorDashboardController;
 use App\Http\Controllers\Doctor\AppointmentController as DoctorAppointmentController;
 use App\Http\Controllers\Doctor\ProfileController as DoctorProfileController;
 use App\Http\Controllers\Doctor\AvailabilityController as DoctorAvailabilityController;
 use App\Http\Controllers\Doctor\ZoomMeetingController as DoctorZoomMeetingController;
+use App\Http\Controllers\Doctor\PaymentController as DoctorPaymentController;
+use App\Http\Controllers\SslcommerzPaymentController;
 
+Route::post('/pay-via-ajax/{appointment}', [SslCommerzPaymentController::class, 'payViaAjax'])
+    ->middleware(['auth']);
+
+// SSLCOMMERZ Start
+Route::get('/example1', [SslCommerzPaymentController::class, 'exampleEasyCheckout']);
+Route::get('/example2', [SslCommerzPaymentController::class, 'exampleHostedCheckout']);
+
+Route::post('/pay', [SslCommerzPaymentController::class, 'index']);
+Route::post('/pay-via-ajax', [SslCommerzPaymentController::class, 'payViaAjax']);
+
+Route::post('/success', [SslCommerzPaymentController::class, 'success']);
+Route::post('/fail', [SslCommerzPaymentController::class, 'fail']);
+Route::post('/cancel', [SslCommerzPaymentController::class, 'cancel']);
+
+Route::post('/ipn', [SslCommerzPaymentController::class, 'ipn']);
+//SSLCOMMERZ END
+
+    Route::middleware(['auth', 'can:patient'])
+    ->prefix('patient')
+    ->name('patient.')
+    ->group(function () {
+        // Show payment confirmation page or form (GET)
+        Route::get('appointments/{appointment}/pay', [SslcommerzPaymentController::class, 'showPayForm'])
+            ->name('appointments.pay');
+
+        // Handle payment POST (form submission)
+        Route::post('appointments/{appointment}/pay', [SslcommerzPaymentController::class, 'payViaAjax'])
+            ->name('appointments.pay.submit');
+
+        // Payments resource routes
+        Route::resource('payments', SslcommerzPaymentController::class)
+            ->only(['index', 'show']);
+    });
 // Doctor‐only routes
 Route::middleware(['auth', 'can:doctor'])
      ->prefix('doctor')
@@ -42,7 +77,7 @@ Route::middleware(['auth', 'can:doctor'])
 
     // 2) Appointments: list & details
     Route::resource('appointments', DoctorAppointmentController::class)
-         ->only(['index','show','destroy']);
+         ->only(['index','show','destroy','update']);
 
     // Show the edit form (no {id} parameter)
 Route::get('availability/edit', [DoctorAvailabilityController::class, 'edit'])
@@ -57,7 +92,7 @@ Route::patch('availability', [DoctorAvailabilityController::class, 'update'])
     Route::resource('zoom-meetings', DoctorZoomMeetingController::class)
          ->only(['index','show','edit','update']);
 
-    Route::resource('payments', Doctor\DoctorPaymentController::class)
+    Route::resource('payments', DoctorPaymentController::class)
               ->only(['index','show','update']);
               // maybe update() to mark paid/confirmed
 
@@ -71,23 +106,7 @@ Route::patch('availability', [DoctorAvailabilityController::class, 'update'])
 });
 
 
-// Accept GET (user cancel) or POST (gateway callback)
-Route::match(['get','post'], 'sslcommerz/success',  [PatientPaymentController::class,'success'])
-    ->name('sslcommerz.success')
-    ->withoutMiddleware(VerifyCsrfToken::class);
 
-Route::match(['get','post'], 'sslcommerz/fail',     [PatientPaymentController::class,'fail'])
-    ->name('sslcommerz.fail')
-    ->withoutMiddleware(VerifyCsrfToken::class);
-
-Route::match(['get','post'], 'sslcommerz/cancel',   [PatientPaymentController::class,'fail'])
-    ->name('sslcommerz.cancel')
-    ->withoutMiddleware(VerifyCsrfToken::class);
-
-// IPN is always POST
-Route::post('sslcommerz/ipn', [PatientPaymentController::class,'ipn'])
-    ->name('sslcommerz.ipn')
-    ->withoutMiddleware(VerifyCsrfToken::class);
 
 
 Route::middleware(['auth','can:patient'])
@@ -101,21 +120,7 @@ Route::middleware(['auth','can:patient'])
          // Book an appointment form & store (GET /patient/appointments/create, POST /patient/appointments)
          Route::resource('appointments', PatientAppointmentController::class)
               ->only(['index','create','store','show']);
-        // just so GET /patient/appointments/{appointment}/pay shows something
-Route::get('appointments/{appointment}/pay',
-    [PatientPaymentController::class, 'pay'])
-    ->name('appointments.pay');
 
-         // Payments: list & show (GET /patient/payments, GET /patient/payments/{id})
-         Route::resource('payments', PatientPaymentController::class)
-              ->only(['index','show']);
-              // Payments index & show:
-         Route::resource('payments', PatientPaymentController::class)
-         ->only(['index','show']);
-
-    // “Pay/Confirm” button POST:
-    Route::post('appointments/{appointment}/pay',[PatientPaymentController::class, 'pay'])
-    ->name('appointments.pay');
 
          // Symptom Checks: list, create, store, show
          Route::resource('symptom-checks', PatientSymptomCheckController::class)

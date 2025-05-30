@@ -34,5 +34,10 @@ public function zoomMeeting()
     return $this->hasOne(\App\Models\ZoomMeeting::class);
 }
 public function patient() { return $this->belongsTo(Patient::class);  }
+public function order()
+{
+    return $this->hasOne(App\Models\Order::class);
+}
+
 
 }

@@ -1,19 +1,24 @@
 <?php
 
+// SSLCommerz configuration
+
+$apiDomain = env('SSLCZ_TESTMODE') ? "https://sandbox.sslcommerz.com" : "https://securepay.sslcommerz.com";
 return [
-  'sandbox'        => env('SSLCOMMERZ_SANDBOX', true),
-    'store_id'       => env('SSLCOMMERZ_STORE_ID'),
-    'store_password' => env('SSLCOMMERZ_STORE_PASSWORD'),
-
-    // Use APP_URL from your .env so SSLCommerz can reach you back
-    'success_url'    => env('APP_URL').'/sslcommerz/success',
-    'fail_url'       => env('APP_URL').'/sslcommerz/fail',     // <-- note `fail_url`, not `failed_url`
-    'cancel_url'     => env('APP_URL').'/sslcommerz/cancel',
-    'ipn_url'        => env('APP_URL').'/sslcommerz/ipn',
-    'checkout_mode' => 'inline',
-// 'success_url' => route('sslcommerz.success', [], false),
-// 'fail_url'    => route('sslcommerz.fail',    [], false),
-// 'cancel_url'  => route('sslcommerz.cancel',  [], false),
-
-
+	'apiCredentials' => [
+		'store_id' => env("SSLCZ_STORE_ID"),
+		'store_password' => env("SSLCZ_STORE_PASSWORD"),
+	],
+	'apiUrl' => [
+		'make_payment' => "/gwprocess/v4/api.php",
+		'transaction_status' => "/validator/api/merchantTransIDvalidationAPI.php",
+		'order_validate' => "/validator/api/validationserverAPI.php",
+		'refund_payment' => "/validator/api/merchantTransIDvalidationAPI.php",
+		'refund_status' => "/validator/api/merchantTransIDvalidationAPI.php",
+	],
+	'apiDomain' => $apiDomain,
+	'connect_from_localhost' => env("IS_LOCALHOST", false), // For Sandbox, use "true", For Live, use "false"
+	'success_url' => '/success',
+	'failed_url' => '/fail',
+	'cancel_url' => '/cancel',
+	'ipn_url' => '/ipn',
 ];
