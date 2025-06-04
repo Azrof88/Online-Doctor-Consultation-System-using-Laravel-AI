@@ -14,6 +14,14 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Middleware;
 
 class VerifyCsrfToken extends Middleware
 {
+   public function handle($request, Closure $next)
+{
+    \Log::info('CSRF Check for URI: ' . $request->path());
+
+    return parent::handle($request, $next);
+}
+
+
    /**
      * Indicates whether the XSRF-TOKEN cookie should be set on the response.
      *
@@ -27,6 +35,12 @@ class VerifyCsrfToken extends Middleware
      * @var array
      */
     protected $except = [
-        '/pay-via-ajax', '/success','/cancel','/fail','/ipn'
-    ];
+    '/pay-via-ajax',
+    '/success',
+    '/cancel',
+    '/fail',
+    '/ipn',
+    'patient/appointments/*/pay',
+];
+
 }

@@ -175,49 +175,63 @@ if (isset($payment_options['status']) && $payment_options['status'] == 'success'
 
 public function success(Request $request)
 {
+    // Dump entire request to see all parameters sent by SSLCommerz
+    // dd($request->all()); // Remove this in production!
+
     $tran_id = $request->input('tran_id');
     $amount = $request->input('amount');
     $currency = $request->input('currency');
 
     $sslc = new SslCommerzNotification();
 
+    // Check if order is found or not
     $order = DB::table('orders')->where('transaction_id', $tran_id)->first();
+    // dd($order); // Remove this in production!
 
     if (!$order) {
-        return redirect()->route('patient.payments.index')
+        return redirect()->route('patient.payments.index') // Consider a more general dashboard route if payments index isn't the primary one
             ->with('error', 'Transaction not found.');
     }
 
+    // Check order status before validation
+    // dd($order->status); // Remove this in production!
+
     if ($order->status === 'Pending') {
         $validation = $sslc->orderValidate($request->all(), $tran_id, $amount, $currency);
+        // dd($validation); // Remove this in production!
 
         if ($validation) {
-            // Update order status
             DB::table('orders')
                 ->where('transaction_id', $tran_id)
                 ->update(['status' => 'Processing']);
 
-            // Update appointment
             if (!empty($order->appointment_id)) {
                 DB::table('appointments')->where('id', $order->appointment_id)
                     ->update(['status' => 'confirmed']);
             }
 
-            return redirect()->route('patient.payments.index')
-                ->with('success', 'Transaction completed successfully.');
+            // Crucial step: Regenerate session ID after successful payment processing
+            // This ensures a fresh CSRF token is available for the next page load.
+            $request->session()->regenerate();
+
+            // Redirect to the patient's home page
+            return redirect()->route('dashboards.patient') // Assuming 'dashboards.patient' is the name of your patient dashboard/home route
+                ->with('success', 'Payment successful! Your appointment is confirmed.');
         } else {
-            return redirect()->route('patient.payments.index')
+            return redirect()->route('patient.payments.index') // Or dashboards.patient with error
                 ->with('error', 'Payment validation failed.');
         }
     }
 
     if (in_array($order->status, ['Processing', 'Complete'])) {
-        return redirect()->route('patient.payments.index')
+        // Regenerate session ID even if already processed to ensure a valid session
+        $request->session()->regenerate();
+        return redirect()->route('dashboards.patient') // Redirect to home even if already completed
             ->with('success', 'Transaction was already completed.');
     }
 
-    return redirect()->route('patient.payments.index')
-        ->with('error', 'Invalid transaction.');
+    return redirect()->route('dashboards.patient') // Redirect to home with error for invalid state
+        ->with('error', 'Invalid transaction state.');
 }
 
 
